@@ -1,0 +1,23 @@
+{
+    "name": "transaction-analysis-tool",
+    "version": "1.0.0",
+    "description": "Tool for blockchain transaction analysis",
+    "scripts": {
+        "start": "node server/index.js",
+        "dev": "nodemon server/index.js"
+    },
+    "dependencies": {
+        "express": "latest",
+        "solc": "0.6.6",
+        "connect-busboy": "latest",
+        "web3-eth-abi": "latest",
+        "axios": "latest"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.3"
+    },
+    "main": "/server/index.js",
+    "keywords": [],
+    "author": "Jonathan van Westendorp",
+    "license": "MIT"
+}
