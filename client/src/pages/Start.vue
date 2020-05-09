@@ -1,5 +1,17 @@
 <template>
   <div class="main">
+    <div class="rpc-availability">
+      <h3>Enter RPC port</h3>
+      <input
+        type="text"
+        v-model="rpcPort"
+        placeholder="Enter rpc port"
+        @input="checkAvailable()"
+        maxlength="4"
+      />
+      <p v-if="rpcAvailable">port {{ rpcPort }} is available!</p>
+      <p v-else>port {{ rpcPort }} is <i>not</i> available</p>
+    </div>
     <div class="fileInput">
       <form id="contract-form" v-on:submit="compile()">
         <input
@@ -69,7 +81,9 @@ export default {
   data() {
     return {
       network: window.location.hostname,
+      rpcPort: "",
       apiEndpoints: [":3000/compile", ":3000/execute", ":3000/deploy"],
+      rpcAvailable: false,
       contractFile: null,
       contractAddress: null,
       checked: false,
@@ -116,6 +130,22 @@ export default {
         .catch(function(err) {
           console.log(err);
         });
+    },
+    checkAvailable() {
+      let self = this;
+      const endpoint = `http://${this.network}:${this.rpcPort}`;
+      if (this.rpcPort.length > 3) {
+        axios
+          .post(endpoint)
+          .then(function(res) {
+            if (res.status === 200) {
+              self.rpcAvailable = true;
+            }
+          })
+          .catch(function() {
+            self.rpcAvailable = false;
+          });
+      }
     },
     handleFile() {
       this.contractFile = this.$refs.contractFile.files[0];
