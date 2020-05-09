@@ -7,11 +7,13 @@
         "dev": "nodemon server/index.js"
     },
     "dependencies": {
+        "axios": "latest",
+        "body-parser": "^1.19.0",
+        "connect-busboy": "latest",
+        "cors": "^2.8.5",
         "express": "latest",
         "solc": "0.6.6",
-        "connect-busboy": "latest",
-        "web3-eth-abi": "latest",
-        "axios": "latest"
+        "web3-eth-abi": "latest"
     },
     "devDependencies": {
         "nodemon": "^2.0.3"

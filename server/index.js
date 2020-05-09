@@ -1,21 +1,24 @@
+const cors = require('cors');
 const solc = require('solc');
 const axios = require('axios');
 const express = require('express');
 const abi = require('web3-eth-abi');
+const bodyParser = require('body-parser');
 const busboy = require('connect-busboy');
 const app = express();
 
-const ledgerEndpoint = "http://localhost:5000"
-const port = process.env.PORT || 3000;
+const port = 3000;
 
+app.use(cors());
 app.use(busboy());
+app.use(bodyParser.json());
 app.use(express.urlencoded({
     extended: false
 }));
 
 app.post('/compile', function (req, res) {
     req.pipe(req.busboy);
-    req.busboy.on('file', function (_, file, filename) {
+    req.busboy.on("file", function (_, file, filename) {
         file.on("data", function(contents) {
             let chunk = contents.toString();
             const input = {
@@ -44,24 +47,27 @@ app.post('/compile', function (req, res) {
 });
 
 app.post('/execute', function (req, res) {
-    const params = req.body.params.replace(/\s/g, '').split(",");
-    const paramTypes = req.body.paramTypes;
-    const functionName = req.body.functionName;
-    const contractAddress = req.body.contractAddress;
+    const params = req.body.input.replace(/\s/g, '').split(",");
+    const paramTypes = req.body.types;
+    const functionName = req.body.name;
+    const contractAddress = req.body.address;
+    const rpcPort = req.body.port;
+
+    const endpoint = `http://localhost:${rpcPort}`;
 
     const FunctionSignature = functionName + "(" + paramTypes + ")";
     const encFunctionSignature = abi.encodeFunctionSignature(FunctionSignature);
 
-    var encParameters;
+    let encParameters;
     if (params.length > 1) {
-        encParameters = abi.encodeParameters(paramTypes.replace(/\s/g, '').split(","), params);
+        encParameters = abi.encodeParameters(paramTypes, params);
     } else {
-        encParameters = abi.encodeParameter(paramTypes, params[0]);
+        encParameters = abi.encodeParameter(paramTypes[0], params[0]);
     }
 
     const encodedCall = encFunctionSignature + encParameters.replace('0x','');
 
-    const rpcSendTransaction = {
+    const sendTx = {
         jsonrpc: "2.0",
         method: "eth_sendTransaction",
         id: 1,
@@ -70,52 +76,40 @@ app.post('/execute', function (req, res) {
             data: encodedCall
         }
     };
-
-    axios.post(ledgerEndpoint, rpcSendTransaction).then(function (txRes) {
-        const receiptHash = txRes.data.result;
-        const rpcGetreceipt = {
+    axios.post(endpoint, sendTx).then(function (txRes) {
+        console.log(txRes.data.result);
+        const getResult = {
             jsonrpc: "2.0",
             method: "eth_getTransactionReceipt",
             id: 1,
-            params: receiptHash
+            params: {
+                data: txRes.data.result
+            }
         };
-        axios.post(ledgerEndpoint, rpcGetreceipt).then(function (receiptRes) {
-            console.log(receiptRes.data);
+        axios.post(endpoint, getResult).then(function (hashRes) {
             res.set({
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
             });
-            res.send(receiptRes.data);
-        })
-        .catch(function (error) {
-            console.error(error);
+            console.log(hashRes.data.result);
+            res.send(hashRes.data.result);
         });
 
-    })
-    .catch(function (error) {
-        console.error(error);
-    });
-
-});
-
-app.post('/deploy', function (req, res) {
-    bytecode = req.body.bytecode;
-    const deploy = {
-        jsonrpc: "2.0",
-        method: "eth_sendTransaction",
-        id: 1,
-        params: {
-            data: bytecode
-        }
-    };
-    axios.post(ledgerEndpoint, deploy).then(function (contractRes) {
-        const contractAddress = contractRes.data;
-        res.set({
-            "Access-Control-Allow-Origin": "*"
-        });
-        res.send(contractAddress);
     });
 });
 
+// app.post('/deploy', function (req, res) {
+//     const byteCode = req.body.byteCode;
+//     const rpcPort = req.body.rpcPort;
+//
+//     const endpoint = `http://localhost:${rpcPort}`;
+//
+//     const result = sendTransaction(endpoint, null, byteCode);
+//     const newAddress = getReceipt(endpoint, result).contractAddress;
+//     res.set({
+//         "Access-Control-Allow-Origin": "*"
+//     });
+//     res.send(newAddress);
+// });
 
 app.listen(port, () => console.log(`Server started on port ${port}`));
