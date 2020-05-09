@@ -7,11 +7,15 @@
         v-model="rpcPort"
         placeholder="Enter rpc port"
         @input="checkAvailable()"
-        min="1000"
-        max="9999"
       />
-      <p v-if="rpcAvailable">port {{ rpcPort }} is available!</p>
-      <p v-else>port {{ rpcPort }} is <i>not</i> available</p>
+      <div v-if="rpcPort" class="port-info">
+        <p v-if="rpcAvailable">
+          port <b>{{ rpcPort }}</b> is available!
+        </p>
+        <p v-else>
+          port <b>{{ rpcPort }}</b> is <i>not</i> available
+        </p>
+      </div>
     </div>
     <div class="fileInput">
       <form id="contract-form" v-on:submit="compile()">
@@ -20,7 +24,12 @@
           id="contract"
           ref="contractFile"
           v-on:change="handleFile()"
+          class="inputfile btn"
         />
+        <label v-if="contractFile" for="contract">{{
+          contractFile.name
+        }}</label>
+        <label v-else for="contract">Choose .sol file</label>
         <input type="checkbox" id="deployed" v-model="checked" />
         <label for="deployed">Contract already active</label>
         <input
@@ -30,45 +39,59 @@
           placeholder="Contract Address"
           v-model="contractAddress"
         />
-        <input type="submit" value="Submit" />
+        <input type="submit" value="Submit" class="btn" />
       </form>
     </div>
-    <div v-if="resContracts" class="functions-wrapper">
-      <div class="files" v-for="(filename, idx_0) in resContracts" :key="idx_0">
+    <div v-if="contractAddress" class="compilation-wrapper">
+      <p>Smart Contract deployed at: {{ contractAddress }}</p>
+      <div v-if="resContracts" class="functions-wrapper">
         <div
-          class="contract"
-          v-for="(contract, idx_1) in Object.keys(filename)"
-          :key="idx_1"
+          class="files"
+          v-for="(filename, idx_0) in resContracts"
+          :key="idx_0"
         >
-          <h2>{{ contract }}</h2>
           <div
-            class="function"
-            v-for="(func, idx_2) in filename[contract].abi"
-            :key="idx_2"
+            class="contract"
+            v-for="(contract, idx_1) in Object.keys(filename)"
+            :key="idx_1"
           >
-            <form
-              v-if="func.type === 'function'"
-              :id="func.name"
-              @submit.prevent="
-                execute(
-                  funcInput[func.name],
-                  funcData[func.name].types,
-                  func.name,
-                  contractAddress,
-                  rpcPort
-                )
-              "
+            <h2>{{ contract }}</h2>
+            <div
+              class="function"
+              v-for="(func, idx_2) in filename[contract].abi"
+              :key="idx_2"
             >
-              <input
-                type="text"
-                name="params"
-                :placeholder="funcData[func.name].placeholder"
-                v-model="funcInput[func.name]"
-              />
-              <input type="submit" name="functionName" :value="func.name" />
-            </form>
+              <form
+                v-if="func.type === 'function'"
+                :id="func.name"
+                @submit.prevent="
+                  execute(
+                    contract,
+                    funcInput[func.name],
+                    funcData[func.name].types,
+                    func.name,
+                    contractAddress,
+                    rpcPort
+                  )
+                "
+              >
+                <input
+                  type="text"
+                  name="params"
+                  :placeholder="funcData[func.name].placeholder"
+                  v-model="funcInput[func.name]"
+                />
+                <input
+                  type="submit"
+                  name="functionName"
+                  :value="func.name"
+                  class="btn"
+                />
+              </form>
+            </div>
           </div>
         </div>
+        <p v-if="lastDuration">Execution time: {{ lastDuration }} ms</p>
       </div>
     </div>
   </div>
@@ -89,7 +112,8 @@ export default {
       resContracts: null,
       funcData: {},
       funcInput: {},
-      funcOutput: {}
+      funcOutput: {},
+      lastDuration: null
     };
   },
   methods: {
@@ -106,10 +130,12 @@ export default {
         })
         .then(function(res) {
           const resContracts = res.data.contracts;
-          console.log(resContracts);
           for (const filename of Object.keys(resContracts)) {
             for (const contract of Object.keys(resContracts[filename])) {
               const abi = resContracts[filename][contract].abi;
+              const byteCode =
+                resContracts[filename][contract].evm.bytecode.object;
+              self.deploy(byteCode);
               for (const func of Object.keys(abi)) {
                 if (abi[func].type === "function") {
                   let types = [];
@@ -134,7 +160,7 @@ export default {
           console.log(err);
         });
     },
-    execute(input, types, name, address, port) {
+    execute(contractName, input, types, name, address, port) {
       let self = this;
       const data = {
         input: input,
@@ -151,18 +177,31 @@ export default {
           }
         })
         .then(function(res) {
-          console.log(res);
-          self.funcOutput[name] = [];
-          self.funcOutput[name].push({ timestamp: res });
+          self.funcOutput[res.data.timestamp] = {
+            contractName: contractName,
+            functionName: name,
+            rpcResponse: res.data.rpcResponse,
+            duration: res.data.duration
+          };
+          self.lastDuration = res.data.duration;
         });
     },
-    async deploy(contractName, byteCode) {
+    deploy(byteCode) {
       let self = this;
       const endpoint = `http://${this.network}${this.apiEndpoints[2]}`;
       axios
-        .post(endpoint, {
-          byteCode: byteCode
-        })
+        .post(
+          endpoint,
+          {
+            byteCode: byteCode,
+            rpcPort: self.rpcPort
+          },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        )
         .then(function(res) {
           self.contractAddress = res.data;
         });
@@ -170,7 +209,7 @@ export default {
     checkAvailable() {
       let self = this;
       const endpoint = `http://${this.network}:${this.rpcPort}`;
-      if (this.rpcPort.length > 3) {
+      if (this.rpcPort.length === 4) {
         axios
           .post(endpoint, {}, { timeout: 500 })
           .then(function(res) {
@@ -183,6 +222,8 @@ export default {
               self.rpcAvailable = false;
             }
           });
+      } else {
+        this.rpcAvailable = false;
       }
     },
     handleFile() {
@@ -191,3 +232,59 @@ export default {
   }
 };
 </script>
+<style>
+.btn {
+  color: #fff !important;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: #4caf50;
+  padding: 20px;
+  border-radius: 5px;
+  display: inline-block;
+  border: none;
+  transition: all 0.4s ease 0s;
+}
+.btn:hover {
+  background: #434343;
+  letter-spacing: 1px;
+  -webkit-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
+  -moz-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
+  box-shadow: 5px 40px -10px rgba(0, 0, 0, 0.57);
+  transition: all 0.4s ease 0s;
+}
+.inputfile {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.inputfile + label {
+  color: #fff !important;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: #4caf50;
+  padding: 20px;
+  border-radius: 5px;
+  display: inline-block;
+  border: none;
+  transition: all 0.4s ease 0s;
+  cursor: pointer;
+}
+
+.inputfile:focus + label,
+.inputfile + label:hover {
+  background: #434343;
+  letter-spacing: 1px;
+  -webkit-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
+  -moz-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
+  box-shadow: 5px 40px -10px rgba(0, 0, 0, 0.57);
+  transition: all 0.4s ease 0s;
+}
+
+.contract {
+  display: table;
+}
+</style>

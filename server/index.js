@@ -76,40 +76,60 @@ app.post('/execute', function (req, res) {
             data: encodedCall
         }
     };
+    const hrstart = process.hrtime();
     axios.post(endpoint, sendTx).then(function (txRes) {
-        console.log(txRes.data.result);
         const getResult = {
             jsonrpc: "2.0",
             method: "eth_getTransactionReceipt",
             id: 1,
-            params: {
-                data: txRes.data.result
-            }
+            params: txRes.data.result
         };
         axios.post(endpoint, getResult).then(function (hashRes) {
+            const hrend = process.hrtime(hrstart);
+            const total = hrend[0] * 1000 + hrend[1] / 1000000;
             res.set({
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
             });
-            console.log(hashRes.data.result);
-            res.send(hashRes.data.result);
+            res.send({
+                rpcResponse: hashRes.data.result,
+                timestamp: hashRes.headers.date,
+                duration: total
+            });
         });
 
     });
 });
 
-// app.post('/deploy', function (req, res) {
-//     const byteCode = req.body.byteCode;
-//     const rpcPort = req.body.rpcPort;
-//
-//     const endpoint = `http://localhost:${rpcPort}`;
-//
-//     const result = sendTransaction(endpoint, null, byteCode);
-//     const newAddress = getReceipt(endpoint, result).contractAddress;
-//     res.set({
-//         "Access-Control-Allow-Origin": "*"
-//     });
-//     res.send(newAddress);
-// });
+app.post('/deploy', function (req, res) {
+    const byteCode = req.body.byteCode;
+    const rpcPort = req.body.rpcPort;
+
+    const endpoint = `http://localhost:${rpcPort}`;
+
+    const deployContract = {
+        jsonrpc: "2.0",
+        method: "eth_sendTransaction",
+        id: 1,
+        params: {
+            data: byteCode
+        }
+    };
+    axios.post(endpoint, deployContract).then(function (contractRes) {
+        const getResult = {
+            jsonrpc: "2.0",
+            method: "eth_getTransactionReceipt",
+            id: 1,
+            params: contractRes.data.result
+        };
+        axios.post(endpoint, getResult).then(function (hashRes) {
+            res.set({
+                "Access-Control-Allow-Origin": "*"
+            });
+            res.send(hashRes.data.result.contractAddress);
+        });
+
+    });
+});
 
 app.listen(port, () => console.log(`Server started on port ${port}`));
