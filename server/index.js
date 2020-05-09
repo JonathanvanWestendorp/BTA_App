@@ -1,6 +1,4 @@
-const fs = require('fs')
 const solc = require('solc');
-const path = require('path');
 const axios = require('axios');
 const express = require('express');
 const abi = require('web3-eth-abi');
@@ -18,22 +16,13 @@ app.use(express.urlencoded({
 app.post('/compile', function (req, res) {
     req.pipe(req.busboy);
     req.busboy.on('file', function (_, file, filename) {
-        var dir = 'uploads/';
-        if (!fs.existsSync('./' + dir)) {
-            fs.mkdirSync('./' + dir);
-        }
-        var filepath = path.join(__dirname, 'uploads/' + filename);
-        file.pipe(fs.createWriteStream(filepath));
-        // Maybe this can be simplified..
-        fs.readFile(filepath, "utf8", function (err, data) {
-            if (err) {
-                throw(err);
-            }
-            var input = {
+        file.on("data", function(contents) {
+            let chunk = contents.toString();
+            const input = {
                 language: 'Solidity',
                 sources: {
                     [filename]: {
-                        content: data
+                        content: chunk
                     }
                 },
                 settings: {
@@ -44,7 +33,7 @@ app.post('/compile', function (req, res) {
                     }
                 }
             };
-            var output = JSON.parse(solc.compile(JSON.stringify(input)));
+            const output = JSON.parse(solc.compile(JSON.stringify(input)));
             res.set({
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
@@ -63,7 +52,7 @@ app.post('/execute', function (req, res) {
     const FunctionSignature = functionName + "(" + paramTypes + ")";
     const encFunctionSignature = abi.encodeFunctionSignature(FunctionSignature);
 
-    var encParameters
+    var encParameters;
     if (params.length > 1) {
         encParameters = abi.encodeParameters(paramTypes.replace(/\s/g, '').split(","), params);
     } else {
@@ -72,7 +61,7 @@ app.post('/execute', function (req, res) {
 
     const encodedCall = encFunctionSignature + encParameters.replace('0x','');
 
-    var rpcSendTransaction = {
+    const rpcSendTransaction = {
         jsonrpc: "2.0",
         method: "eth_sendTransaction",
         id: 1,
@@ -83,30 +72,50 @@ app.post('/execute', function (req, res) {
     };
 
     axios.post(ledgerEndpoint, rpcSendTransaction).then(function (txRes) {
-        const recieptHash = txRes.data.result;
-        const rpcGetReciept = {
+        const receiptHash = txRes.data.result;
+        const rpcGetreceipt = {
             jsonrpc: "2.0",
             method: "eth_getTransactionReceipt",
             id: 1,
-            params: recieptHash
-        }
-        axios.post(ledgerEndpoint, rpcGetReciept).then(function (recieptRes) {
-            console.log(recieptRes.data);
+            params: receiptHash
+        };
+        axios.post(ledgerEndpoint, rpcGetreceipt).then(function (receiptRes) {
+            console.log(receiptRes.data);
             res.set({
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
             });
-            res.send(output);
+            res.send(receiptRes.data);
         })
         .catch(function (error) {
-        console.error(error)
+            console.error(error);
         });
 
     })
     .catch(function (error) {
-        console.error(error)
+        console.error(error);
     });
 
 });
+
+app.post('/deploy', function (req, res) {
+    bytecode = req.body.bytecode;
+    const deploy = {
+        jsonrpc: "2.0",
+        method: "eth_sendTransaction",
+        id: 1,
+        params: {
+            data: bytecode
+        }
+    };
+    axios.post(ledgerEndpoint, deploy).then(function (contractRes) {
+        const contractAddress = contractRes.data;
+        res.set({
+            "Access-Control-Allow-Origin": "*"
+        });
+        res.send(contractAddress);
+    });
+});
+
 
 app.listen(port, () => console.log(`Server started on port ${port}`));
