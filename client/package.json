@@ -1,6 +1,6 @@
 {
-  "name": "vue-material-dashboard",
-  "version": "1.4.0",
+  "name": "transaction-analysis-tool",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve --open",

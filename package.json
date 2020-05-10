@@ -12,6 +12,7 @@
         "connect-busboy": "latest",
         "cors": "^2.8.5",
         "express": "latest",
+        "mongoose": "^5.9.13",
         "solc": "0.6.6",
         "web3-eth-abi": "latest"
     },

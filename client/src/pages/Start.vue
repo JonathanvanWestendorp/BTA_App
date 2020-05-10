@@ -13,7 +13,8 @@
           port <b>{{ rpcPort }}</b> is available!
         </p>
         <p v-else>
-          port <b>{{ rpcPort }}</b> is <i>not</i> available
+          port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
+          configuration
         </p>
       </div>
     </div>
@@ -104,7 +105,12 @@ export default {
     return {
       network: window.location.hostname,
       rpcPort: "",
-      apiEndpoints: [":3000/compile", ":3000/execute", ":3000/deploy"],
+      apiEndpoints: [
+        ":3000/compile",
+        ":3000/execute",
+        ":3000/deploy",
+        ":3000/addCall"
+      ],
       rpcAvailable: false,
       contractFile: null,
       contractAddress: null,
@@ -112,7 +118,6 @@ export default {
       resContracts: null,
       funcData: {},
       funcInput: {},
-      funcOutput: {},
       lastDuration: null
     };
   },
@@ -177,13 +182,32 @@ export default {
           }
         })
         .then(function(res) {
-          self.funcOutput[res.data.timestamp] = {
-            contractName: contractName,
-            functionName: name,
-            rpcResponse: res.data.rpcResponse,
-            duration: res.data.duration
-          };
           self.lastDuration = res.data.duration;
+          axios
+            .post(
+              `http://${self.network}${self.apiEndpoints[3]}`,
+              {
+                timestamp: res.data.timestamp,
+                chainId: "Fabric",
+                contractAddress: self.contractAddress,
+                contractName: contractName,
+                functionName: name,
+                rpcResponse: res.data.rpcResponse,
+                rpcPort: port,
+                duration: res.data.duration
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json"
+                }
+              }
+            )
+            .then(function(res) {
+              console.log(res.status);
+            })
+            .catch(function(err) {
+              console.log(err);
+            });
         });
     },
     deploy(byteCode) {
@@ -249,7 +273,7 @@ export default {
   letter-spacing: 1px;
   -webkit-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
   -moz-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
-  box-shadow: 5px 40px -10px rgba(0, 0, 0, 0.57);
+  box-shadow: 5px 40px 10px rgba(0, 0, 0, 0.57);
   transition: all 0.4s ease 0s;
 }
 .inputfile {
@@ -280,7 +304,7 @@ export default {
   letter-spacing: 1px;
   -webkit-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
   -moz-box-shadow: 0 5px 40px -10px rgba(0, 0, 0, 0.57);
-  box-shadow: 5px 40px -10px rgba(0, 0, 0, 0.57);
+  box-shadow: 5px 40px 10px rgba(0, 0, 0, 0.57);
   transition: all 0.4s ease 0s;
 }
 
