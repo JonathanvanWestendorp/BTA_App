@@ -25,7 +25,7 @@ export default {
   data() {
     return {
       Caterpillar: {
-        src: "https://www.pexels.com/search"
+        src: "http://34.67.163.25:4200"
       },
       iframeLoading: true
     };

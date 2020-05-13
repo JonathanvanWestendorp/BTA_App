@@ -26,7 +26,7 @@ export class ProcessStorage {
       alert('Resource File cannot be empty. Be sure to upload the required file.');
     else {
       this.http
-      .post('http://localhost:3000/resources/policy', { model: this.resourceModel })
+      .post('http://34.67.163.25:3000/resources/policy', { model: this.resourceModel })
       .subscribe(
         (resp) => {
          console.log(resp.json());
@@ -42,12 +42,12 @@ export class ProcessStorage {
         alert('Root proces Id cannot be empty.');
     else {
       this.http
-      .post('http://localhost:3000/resources/task-role', { rootProc: rootProcess, policyId: policyId })
+      .post('http://34.67.163.25:3000/resources/task-role', { rootProc: rootProcess, policyId: policyId })
       .subscribe(
         (resp) => {
           console.log(resp.json());
       },
-      (error) => { 
+      (error) => {
         console.log(error)
       });
     }
@@ -55,7 +55,7 @@ export class ProcessStorage {
 
   findRoleState(role, pCase)  {
     this.http
-    .get(`http://localhost:3000/resources/${role}/${pCase}`)
+    .get(`http://34.67.163.25:3000/resources/${role}/${pCase}`)
     .subscribe(
     (resp) => {
       const resJ = resp.json();
@@ -69,61 +69,61 @@ export class ProcessStorage {
 
   nominate(rNominator, rNominee, nominator, nominee, pCase) {
       this.http
-      .post('http://localhost:3000/resources/nominate', { rNominator: rNominator, rNominee: rNominee, nominator: nominator, nominee: nominee, pCase: pCase   })
+      .post('http://34.67.163.25:3000/resources/nominate', { rNominator: rNominator, rNominee: rNominee, nominator: nominator, nominee: nominee, pCase: pCase   })
       .subscribe(
         (resp) => {
           console.log(resp.toString());
         },
-        (error) => { 
+        (error) => {
           console.log(error)
       });
   }
 
   release(rNominator, rNominee, nominator, pCase) {
     this.http
-    .post('http://localhost:3000/resources/release', {rNominator: rNominator, rNominee: rNominee, nominator: nominator, pCase: pCase   })
+    .post('http://34.67.163.25:3000/resources/release', {rNominator: rNominator, rNominee: rNominee, nominator: nominator, pCase: pCase   })
     .subscribe(
       (resp) => {
         console.log(resp.toString());
       },
-      (error) => { 
+      (error) => {
         console.log(error)
     });
 }
 
 vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted) {
   this.http
-  .post('http://localhost:3000/resources/vote', {rNominator: rNominator, rNominee: rNominee, rEndorser: rEndorser, endorser: endorser, pCase: pCase, onNomination: onNomination, isAccepted: isAccepted   })
+  .post('http://34.67.163.25:3000/resources/vote', {rNominator: rNominator, rNominee: rNominee, rEndorser: rEndorser, endorser: endorser, pCase: pCase, onNomination: onNomination, isAccepted: isAccepted   })
   .subscribe(
     (resp) => {
       console.log(resp.toString());
     },
-    (error) => { 
+    (error) => {
       console.log(error)
   });
 }
 
   createProcessRegistry() {
       this.http
-      .post('http://localhost:3000/registry', { })
+      .post('http://34.67.163.25:3000/registry', { })
       .subscribe(
         (resp) => {
           console.log('SUCCESS: ', resp.json());
           return resp.json().address;
       },
-      (error) => { 
+      (error) => {
         console.log('ERROR: ', error);
       });
   }
 
   loadProcessRegistry(registryAddress: string) {
     this.http
-    .post('http://localhost:3000/registry/load', {from: registryAddress})
+    .post('http://34.67.163.25:3000/registry/load', {from: registryAddress})
     .subscribe(
       (resp) => {
         console.log('SUCCESS: ', resp.json());
     },
-    (error) => { 
+    (error) => {
       console.log('ERROR: ', error);
     });
 
@@ -132,7 +132,7 @@ vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted)
 
   registerModel(model: string) {
     this.http
-      .post('http://localhost:3000/models', { bpmn: model })
+      .post('http://34.67.163.25:3000/models', { bpmn: model })
       .subscribe(
         (resp) => {
         const res = resp.json();
@@ -148,7 +148,7 @@ vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted)
 
   searchRegisteredModel(modelId: string) {
     this.http
-      .get('http://localhost:3000/models')
+      .get('http://34.67.163.25:3000/models')
       .subscribe(
       (resp) => {
         const resJ = resp.json();
@@ -168,7 +168,7 @@ vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted)
   }
 
   updateModels() {
-    this.http.get('http://localhost:3000/models')
+    this.http.get('http://34.67.163.25:3000/models')
       .subscribe(resp => {
         this.processes = [];
         resp.json().forEach(element => {
@@ -180,7 +180,7 @@ vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted)
   }
 
   createInstance(procId: string, caseCreator: string, creatorRole: string) {
-    this.http.post('http://localhost:3000/models/' + procId, {caseCreator: caseCreator, creatorRole : creatorRole})
+    this.http.post('http://34.67.163.25:3000/models/' + procId, {caseCreator: caseCreator, creatorRole : creatorRole})
       .subscribe(resp => {
         const res = resp.json();
         if (!this.instances[procId]) {
@@ -191,7 +191,7 @@ vote(rNominator, rNominee, rEndorser, endorser, pCase, onNomination, isAccepted)
   };
 
   updateInstances(procId: string) {
-    this.http.get('http://localhost:3000/processes/')
+    this.http.get('http://34.67.163.25:3000/processes/')
       .subscribe(resp => {
         const res = resp.json();
         this.instances[procId] = [];

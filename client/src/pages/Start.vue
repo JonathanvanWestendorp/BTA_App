@@ -1,105 +1,119 @@
 <template>
   <div class="main">
-    <div class="rpc-availability">
-      <h4>Enter RPC port</h4>
+    <div class="starting-point">
       <input
-        type="number"
-        v-model="rpcPort"
-        placeholder="Enter rpc port"
-        class="port-input"
-        @input="checkAvailable()"
+        type="button"
+        value="Start from business process model!"
+        @click="businessModel()"
       />
-      <div v-if="rpcPort" class="port-info">
-        <p v-if="rpcAvailable" class="port-info-text">
-          port <b>{{ rpcPort }}</b> is available!
-        </p>
-        <p v-else class="port-info-text">
-          port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
-          configuration
-        </p>
+      <input
+        type="button"
+        value="Start from solidity!"
+        @click="solidity = true"
+      />
+    </div>
+    <div v-if="solidity" class="solidity-wrapper">
+      <div class="rpc-availability">
+        <h4>Enter RPC port</h4>
+        <input
+          type="number"
+          v-model="rpcPort"
+          placeholder="Enter rpc port"
+          class="port-input"
+          @input="checkAvailable()"
+        />
+        <div v-if="rpcPort" class="port-info">
+          <p v-if="rpcAvailable" class="port-info-text">
+            port <b>{{ rpcPort }}</b> is available!
+          </p>
+          <p v-else class="port-info-text">
+            port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
+            configuration
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="fileInput">
-      <form id="contract-form" v-on:submit="compile()">
-        <input
-          type="file"
-          id="contract"
-          ref="contractFile"
-          v-on:change="handleFile()"
-          class="inputfile btn"
-        />
-        <label v-if="contractFilename" for="contract">{{
-          contractFilename
-        }}</label>
-        <label v-else for="contract">Choose .sol file</label>
-        <input type="checkbox" id="deployed" v-model="checked" />
-        <label for="deployed">Contract already active</label>
-        <input
-          v-if="checked"
-          type="text"
-          id="contractAddress"
-          placeholder="Contract Address"
-          v-model="contractAddress"
-        />
-        <input type="submit" value="Submit" class="btn" />
-        <img
-          v-if="loading"
-          class="loader"
-          src="../assets/svg/loader.svg"
-          alt=""
-        />
-      </form>
-    </div>
-    <div v-if="contractAddress" class="compilation-wrapper">
-      <p>Smart Contract deployed at: {{ contractAddress }}</p>
-      <div v-if="resContracts" class="functions-wrapper">
-        <div
-          class="files"
-          v-for="(filename, idx_0) in resContracts"
-          :key="idx_0"
-        >
+      <div class="fileInput">
+        <form id="contract-form" v-on:submit="compile()">
+          <input
+            type="file"
+            id="contract"
+            ref="contractFile"
+            v-on:change="handleFile()"
+            class="inputfile btn"
+          />
+          <label v-if="contractFilename" for="contract">{{
+            contractFilename
+          }}</label>
+          <label v-else for="contract">Choose .sol file</label>
+          <input type="checkbox" id="deployed" v-model="checked" />
+          <label for="deployed">Contract already active</label>
+          <input
+            v-if="checked"
+            type="text"
+            id="contractAddress"
+            placeholder="Contract Address"
+            v-model="contractAddress"
+          />
+          <input type="submit" value="Submit" class="btn" />
+          <img
+            v-if="loading"
+            class="loader"
+            src="../assets/svg/loader.svg"
+            alt=""
+          />
+        </form>
+      </div>
+      <div v-if="contractAddress" class="compilation-wrapper">
+        <p>Smart Contract deployed at: {{ contractAddress }}</p>
+        <div v-if="resContracts" class="functions-wrapper">
           <div
-            class="contract"
-            v-for="(contract, idx_1) in Object.keys(filename)"
-            :key="idx_1"
+            class="files"
+            v-for="(filename, idx_0) in resContracts"
+            :key="idx_0"
           >
-            <h2>{{ contract }}</h2>
             <div
-              class="function"
-              v-for="(func, idx_2) in filename[contract].abi"
-              :key="idx_2"
+              class="contract"
+              v-for="(contract, idx_1) in Object.keys(filename)"
+              :key="idx_1"
             >
-              <form
-                v-if="func.type === 'function'"
-                :id="func.name"
-                @submit.prevent="
-                  execute(
-                    contract,
-                    funcInput[func.name],
-                    funcData[func.name].types,
-                    func.name,
-                    contractAddress,
-                    rpcPort
-                  )
-                "
+              <h2>{{ contract }}</h2>
+              <div
+                class="function"
+                v-for="(func, idx_2) in filename[contract].abi"
+                :key="idx_2"
               >
-                <input
-                  type="text"
-                  name="params"
-                  :placeholder="funcData[func.name].placeholder"
-                  v-model="funcInput[func.name]"
-                />
-                <input
-                  type="submit"
-                  name="functionName"
-                  :value="func.name"
-                  class="btn"
-                />
-              </form>
+                <form
+                  v-if="func.type === 'function'"
+                  :id="func.name"
+                  @submit.prevent="
+                    execute(
+                      contract,
+                      funcInput[func.name],
+                      funcData[func.name].types,
+                      func.name,
+                      contractAddress,
+                      rpcPort
+                    )
+                  "
+                >
+                  <input
+                    type="text"
+                    name="params"
+                    :placeholder="funcData[func.name].placeholder"
+                    v-model="funcInput[func.name]"
+                  />
+                  <input
+                    type="submit"
+                    name="functionName"
+                    :value="func.name"
+                    class="btn"
+                  />
+                </form>
+              </div>
             </div>
           </div>
+          <p v-if="lastDuration">Execution time: {{ lastDuration }} ms</p>
         </div>
-        <p v-if="lastDuration">Execution time: {{ lastDuration }} ms</p>
       </div>
     </div>
   </div>
@@ -119,6 +133,7 @@ export default {
         ":4500/deploy",
         ":4500/calls"
       ],
+      solidity: false,
       rpcAvailable: false,
       contractFile: null,
       contractFilename: "",
@@ -284,6 +299,9 @@ export default {
           self.contractAddress = res.data;
           self.loading = false;
         });
+    },
+    businessModel() {
+      this.$router.push('bpm');
     },
     checkAvailable() {
       let self = this;

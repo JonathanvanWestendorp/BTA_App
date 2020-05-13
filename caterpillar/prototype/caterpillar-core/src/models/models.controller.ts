@@ -826,7 +826,7 @@ let searchRepository = (top: number, queue: Array<string>, processData: Map<stri
 //////////////////////////////////////////////////////////////////////
 
 models.post('/models', (req, res) => {
-    if (processRegistryContract === undefined) {
+    if (processRegistryContract !== undefined) {
         console.log('ERROR: Runtime Registry NOT FOUND');
         res.status(404).send({'Error': 'Runtime Registry NOT FOUND'});
         console.log('----------------------------------------------------------------------------------------------');
