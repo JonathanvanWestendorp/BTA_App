@@ -1,3 +1,3 @@
 #!/bin/bash
 
-mongod --dbpath $PWD/server/data
+mongod --fork --logpath "$PWD"/server/data/mongod.log --dbpath "$PWD"/server/data

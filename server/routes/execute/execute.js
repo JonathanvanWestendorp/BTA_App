@@ -36,6 +36,10 @@ router.post('/', function (req, res) {
   };
   const hrstart = process.hrtime();
   axios.post(endpoint, sendTx).then(function (txRes) {
+    if (txRes.data.error) {
+      res.send({error: txRes.data.error.message});
+      return;
+    }
     const getResult = {
       jsonrpc: "2.0",
       method: "eth_getTransactionReceipt",

@@ -2,7 +2,9 @@
   <md-toolbar md-elevation="0" class="md-transparent">
     <div class="md-toolbar-row">
       <div class="md-toolbar-section-start">
-        <h3 class="md-title">{{ $route.name }}</h3>
+        <h3 class="md-title">
+          <b>{{ $route.name }}</b>
+        </h3>
       </div>
       <div class="md-toolbar-section-end">
         <md-button
@@ -21,6 +23,10 @@
               <i class="material-icons">trip_origin</i>
               <p class="hidden-lg hidden-md">Start</p>
             </md-list-item>
+            <md-list-item @click="clearSesh()">
+              <i class="material-icons">clear</i>
+              <p class="hidden-lg hidden-md">Clear</p>
+            </md-list-item>
           </md-list>
         </div>
       </div>
@@ -36,6 +42,12 @@ export default {
   methods: {
     toggleSidebar() {
       this.$sidebar.displaySidebar(!this.$sidebar.showSidebar);
+    },
+    clearSesh() {
+      if (this.$session.exists()) {
+        this.$session.destroy();
+      }
+      location.reload();
     }
   }
 };

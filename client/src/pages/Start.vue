@@ -6,13 +6,14 @@
         type="number"
         v-model="rpcPort"
         placeholder="Enter rpc port"
+        class="port-input"
         @input="checkAvailable()"
       />
       <div v-if="rpcPort" class="port-info">
-        <p v-if="rpcAvailable">
+        <p v-if="rpcAvailable" class="port-info-text">
           port <b>{{ rpcPort }}</b> is available!
         </p>
-        <p v-else>
+        <p v-else class="port-info-text">
           port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
           configuration
         </p>
@@ -27,8 +28,8 @@
           v-on:change="handleFile()"
           class="inputfile btn"
         />
-        <label v-if="contractFile" for="contract">{{
-          contractFile.name
+        <label v-if="contractFilename" for="contract">{{
+          contractFilename
         }}</label>
         <label v-else for="contract">Choose .sol file</label>
         <input type="checkbox" id="deployed" v-model="checked" />
@@ -41,6 +42,12 @@
           v-model="contractAddress"
         />
         <input type="submit" value="Submit" class="btn" />
+        <img
+          v-if="loading"
+          class="loader"
+          src="../assets/svg/loader.svg"
+          alt=""
+        />
       </form>
     </div>
     <div v-if="contractAddress" class="compilation-wrapper">
@@ -100,6 +107,7 @@
 
 <script>
 import axios from "axios";
+
 export default {
   data() {
     return {
@@ -109,21 +117,39 @@ export default {
         ":3000/compile",
         ":3000/execute",
         ":3000/deploy",
-        ":3000/addCall"
+        ":3000/calls"
       ],
       rpcAvailable: false,
       contractFile: null,
+      contractFilename: "",
       contractAddress: null,
       checked: false,
       resContracts: null,
       funcData: {},
       funcInput: {},
-      lastDuration: null
+      lastDuration: null,
+      loading: false
     };
+  },
+  mounted() {
+    if (this.$session.exists()) {
+      Object.assign(this.$data, this.$session.get("data"));
+    } else {
+      this.$session.set("data", this.$data);
+    }
+  },
+  watch: {
+    $data: {
+      handler() {
+        this.$session.set("data", this.$data);
+      },
+      deep: true
+    }
   },
   methods: {
     compile() {
       let self = this;
+      this.loading = true;
       const endpoint = `http://${this.network}${this.apiEndpoints[0]}`;
       let contractData = new FormData();
       contractData.append("contract", this.contractFile);
@@ -134,13 +160,23 @@ export default {
           }
         })
         .then(function(res) {
+          if (!res.data.contracts) {
+            alert(
+              "Error, contract couldn't be deployed: " +
+                res.data.errors[0].message
+            );
+            this.loading = false;
+            return;
+          }
           const resContracts = res.data.contracts;
           for (const filename of Object.keys(resContracts)) {
             for (const contract of Object.keys(resContracts[filename])) {
               const abi = resContracts[filename][contract].abi;
-              const byteCode =
-                resContracts[filename][contract].evm.bytecode.object;
-              self.deploy(byteCode);
+              if (!self.checked) {
+                const byteCode =
+                  resContracts[filename][contract].evm.bytecode.object;
+                self.deploy(byteCode);
+              }
               for (const func of Object.keys(abi)) {
                 if (abi[func].type === "function") {
                   let types = [];
@@ -160,13 +196,18 @@ export default {
             }
           }
           self.resContracts = resContracts;
+          if (self.contractAddress) {
+            self.loading = false;
+          }
         })
         .catch(function(err) {
           console.log(err);
+          this.loading = false;
         });
     },
     execute(contractName, input, types, name, address, port) {
       let self = this;
+      this.loading = true;
       const data = {
         input: input,
         types: types,
@@ -182,6 +223,11 @@ export default {
           }
         })
         .then(function(res) {
+          if (res.data.error) {
+            alert("Error in transaction handler: " + res.data.error);
+            this.loading = false;
+            return;
+          }
           self.lastDuration = res.data.duration;
           axios
             .post(
@@ -192,6 +238,7 @@ export default {
                 contractAddress: self.contractAddress,
                 contractName: contractName,
                 functionName: name,
+                input: input,
                 rpcResponse: res.data.rpcResponse,
                 rpcPort: port,
                 duration: res.data.duration
@@ -204,14 +251,21 @@ export default {
             )
             .then(function(res) {
               console.log(res.status);
+              self.loading = false;
             })
             .catch(function(err) {
               console.log(err);
+              self.loading = false;
             });
+        })
+        .catch(function(err) {
+          alert("Error in transaction handler: " + err);
+          this.loading = false;
         });
     },
     deploy(byteCode) {
       let self = this;
+      this.loading = true;
       const endpoint = `http://${this.network}${this.apiEndpoints[2]}`;
       axios
         .post(
@@ -228,6 +282,7 @@ export default {
         )
         .then(function(res) {
           self.contractAddress = res.data;
+          self.loading = false;
         });
     },
     checkAvailable() {
@@ -252,6 +307,7 @@ export default {
     },
     handleFile() {
       this.contractFile = this.$refs.contractFile.files[0];
+      this.contractFilename = this.contractFile.name;
     }
   }
 };
@@ -307,8 +363,14 @@ export default {
   box-shadow: 5px 40px 10px rgba(0, 0, 0, 0.57);
   transition: all 0.4s ease 0s;
 }
-
-.contract {
-  display: table;
+.rpc-availability {
+  margin-bottom: 20px;
+  margin-right: 10px;
+}
+.port-info {
+  display: inline-block;
+}
+.loader {
+  display: inline-block;
 }
 </style>
