@@ -82,7 +82,7 @@ export default {
   data() {
     return {
       network: window.location.hostname,
-      apiEndpoints: [":3000/calls"],
+      apiEndpoints: [":4500/calls"],
       callData: null
     };
   },

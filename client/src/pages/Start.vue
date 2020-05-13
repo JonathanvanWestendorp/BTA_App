@@ -114,10 +114,10 @@ export default {
       network: window.location.hostname,
       rpcPort: "",
       apiEndpoints: [
-        ":3000/compile",
-        ":3000/execute",
-        ":3000/deploy",
-        ":3000/calls"
+        ":4500/compile",
+        ":4500/execute",
+        ":4500/deploy",
+        ":4500/calls"
       ],
       rpcAvailable: false,
       contractFile: null,
