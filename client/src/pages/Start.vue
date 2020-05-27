@@ -1,98 +1,119 @@
 <template>
   <div class="main">
-    <div class="rpc-availability">
-      <h4>Enter RPC port</h4>
+    <div class="starting-point">
       <input
-        type="number"
-        v-model="rpcPort"
-        placeholder="Enter rpc port"
-        @input="checkAvailable()"
+        type="button"
+        value="Start from business process model!"
+        @click="businessModel()"
       />
-      <div v-if="rpcPort" class="port-info">
-        <p v-if="rpcAvailable">
-          port <b>{{ rpcPort }}</b> is available!
-        </p>
-        <p v-else>
-          port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
-          configuration
-        </p>
+      <input
+        type="button"
+        value="Start from solidity!"
+        @click="solidity = true"
+      />
+    </div>
+    <div v-if="solidity" class="solidity-wrapper">
+      <div class="rpc-availability">
+        <h4>Enter RPC port</h4>
+        <input
+          type="number"
+          v-model="rpcPort"
+          placeholder="Enter rpc port"
+          class="port-input"
+          @input="checkAvailable()"
+        />
+        <div v-if="rpcPort" class="port-info">
+          <p v-if="rpcAvailable" class="port-info-text">
+            port <b>{{ rpcPort }}</b> is available!
+          </p>
+          <p v-else class="port-info-text">
+            port <b>{{ rpcPort }}</b> is <i>not</i> available, check rpc
+            configuration
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="fileInput">
-      <form id="contract-form" v-on:submit="compile()">
-        <input
-          type="file"
-          id="contract"
-          ref="contractFile"
-          v-on:change="handleFile()"
-          class="inputfile btn"
-        />
-        <label v-if="contractFile" for="contract">{{
-          contractFile.name
-        }}</label>
-        <label v-else for="contract">Choose .sol file</label>
-        <input type="checkbox" id="deployed" v-model="checked" />
-        <label for="deployed">Contract already active</label>
-        <input
-          v-if="checked"
-          type="text"
-          id="contractAddress"
-          placeholder="Contract Address"
-          v-model="contractAddress"
-        />
-        <input type="submit" value="Submit" class="btn" />
-      </form>
-    </div>
-    <div v-if="contractAddress" class="compilation-wrapper">
-      <p>Smart Contract deployed at: {{ contractAddress }}</p>
-      <div v-if="resContracts" class="functions-wrapper">
-        <div
-          class="files"
-          v-for="(filename, idx_0) in resContracts"
-          :key="idx_0"
-        >
+      <div class="fileInput">
+        <form id="contract-form" v-on:submit="compile()">
+          <input
+            type="file"
+            id="contract"
+            ref="contractFile"
+            v-on:change="handleFile()"
+            class="inputfile btn"
+          />
+          <label v-if="contractFilename" for="contract">{{
+            contractFilename
+          }}</label>
+          <label v-else for="contract">Choose .sol file</label>
+          <input type="checkbox" id="deployed" v-model="checked" />
+          <label for="deployed">Contract already active</label>
+          <input
+            v-if="checked"
+            type="text"
+            id="contractAddress"
+            placeholder="Contract Address"
+            v-model="contractAddress"
+          />
+          <input type="submit" value="Submit" class="btn" />
+          <img
+            v-if="loading"
+            class="loader"
+            src="../assets/svg/loader.svg"
+            alt=""
+          />
+        </form>
+      </div>
+      <div v-if="contractAddress" class="compilation-wrapper">
+        <p>Smart Contract deployed at: {{ contractAddress }}</p>
+        <div v-if="resContracts" class="functions-wrapper">
           <div
-            class="contract"
-            v-for="(contract, idx_1) in Object.keys(filename)"
-            :key="idx_1"
+            class="files"
+            v-for="(filename, idx_0) in resContracts"
+            :key="idx_0"
           >
-            <h2>{{ contract }}</h2>
             <div
-              class="function"
-              v-for="(func, idx_2) in filename[contract].abi"
-              :key="idx_2"
+              class="contract"
+              v-for="(contract, idx_1) in Object.keys(filename)"
+              :key="idx_1"
             >
-              <form
-                v-if="func.type === 'function'"
-                :id="func.name"
-                @submit.prevent="
-                  execute(
-                    contract,
-                    funcInput[func.name],
-                    funcData[func.name].types,
-                    func.name,
-                    contractAddress,
-                    rpcPort
-                  )
-                "
+              <h2>{{ contract }}</h2>
+              <div
+                class="function"
+                v-for="(func, idx_2) in filename[contract].abi"
+                :key="idx_2"
               >
-                <input
-                  type="text"
-                  name="params"
-                  :placeholder="funcData[func.name].placeholder"
-                  v-model="funcInput[func.name]"
-                />
-                <input
-                  type="submit"
-                  name="functionName"
-                  :value="func.name"
-                  class="btn"
-                />
-              </form>
+                <form
+                  v-if="func.type === 'function'"
+                  :id="func.name"
+                  @submit.prevent="
+                    execute(
+                      contract,
+                      funcInput[func.name],
+                      funcData[func.name].types,
+                      func.name,
+                      contractAddress,
+                      rpcPort
+                    )
+                  "
+                >
+                  <input
+                    type="text"
+                    name="params"
+                    :placeholder="funcData[func.name].placeholder"
+                    v-model="funcInput[func.name]"
+                  />
+                  <input
+                    type="submit"
+                    name="functionName"
+                    :value="func.name"
+                    class="btn"
+                  />
+                </form>
+              </div>
             </div>
           </div>
+          <p v-if="lastDuration">Execution time: {{ lastDuration }} ms</p>
         </div>
-        <p v-if="lastDuration">Execution time: {{ lastDuration }} ms</p>
       </div>
     </div>
   </div>
@@ -100,30 +121,50 @@
 
 <script>
 import axios from "axios";
+
 export default {
   data() {
     return {
-      network: window.location.hostname,
+      network: "localhost",
       rpcPort: "",
       apiEndpoints: [
-        ":3000/compile",
-        ":3000/execute",
-        ":3000/deploy",
-        ":3000/addCall"
+        ":4500/compile",
+        ":4500/execute",
+        ":4500/deploy",
+        ":4500/calls"
       ],
+      solidity: false,
       rpcAvailable: false,
       contractFile: null,
+      contractFilename: "",
       contractAddress: null,
       checked: false,
       resContracts: null,
       funcData: {},
       funcInput: {},
-      lastDuration: null
+      lastDuration: null,
+      loading: false
     };
+  },
+  mounted() {
+    if (this.$session.exists()) {
+      Object.assign(this.$data, this.$session.get("data"));
+    } else {
+      this.$session.set("data", this.$data);
+    }
+  },
+  watch: {
+    $data: {
+      handler() {
+        this.$session.set("data", this.$data);
+      },
+      deep: true
+    }
   },
   methods: {
     compile() {
       let self = this;
+      this.loading = true;
       const endpoint = `http://${this.network}${this.apiEndpoints[0]}`;
       let contractData = new FormData();
       contractData.append("contract", this.contractFile);
@@ -134,13 +175,23 @@ export default {
           }
         })
         .then(function(res) {
+          if (!res.data.contracts) {
+            alert(
+              "Error, contract couldn't be deployed: " +
+                res.data.errors[0].message
+            );
+            this.loading = false;
+            return;
+          }
           const resContracts = res.data.contracts;
           for (const filename of Object.keys(resContracts)) {
             for (const contract of Object.keys(resContracts[filename])) {
               const abi = resContracts[filename][contract].abi;
-              const byteCode =
-                resContracts[filename][contract].evm.bytecode.object;
-              self.deploy(byteCode);
+              if (!self.checked) {
+                const byteCode =
+                  resContracts[filename][contract].evm.bytecode.object;
+                self.deploy(byteCode);
+              }
               for (const func of Object.keys(abi)) {
                 if (abi[func].type === "function") {
                   let types = [];
@@ -160,13 +211,18 @@ export default {
             }
           }
           self.resContracts = resContracts;
+          if (self.contractAddress) {
+            self.loading = false;
+          }
         })
         .catch(function(err) {
           console.log(err);
+          this.loading = false;
         });
     },
     execute(contractName, input, types, name, address, port) {
       let self = this;
+      this.loading = true;
       const data = {
         input: input,
         types: types,
@@ -182,6 +238,11 @@ export default {
           }
         })
         .then(function(res) {
+          if (res.data.error) {
+            alert("Error in transaction handler: " + res.data.error);
+            this.loading = false;
+            return;
+          }
           self.lastDuration = res.data.duration;
           axios
             .post(
@@ -192,6 +253,7 @@ export default {
                 contractAddress: self.contractAddress,
                 contractName: contractName,
                 functionName: name,
+                input: input,
                 rpcResponse: res.data.rpcResponse,
                 rpcPort: port,
                 duration: res.data.duration
@@ -204,14 +266,21 @@ export default {
             )
             .then(function(res) {
               console.log(res.status);
+              self.loading = false;
             })
             .catch(function(err) {
               console.log(err);
+              self.loading = false;
             });
+        })
+        .catch(function(err) {
+          alert("Error in transaction handler: " + err);
+          this.loading = false;
         });
     },
     deploy(byteCode) {
       let self = this;
+      this.loading = true;
       const endpoint = `http://${this.network}${this.apiEndpoints[2]}`;
       axios
         .post(
@@ -228,7 +297,11 @@ export default {
         )
         .then(function(res) {
           self.contractAddress = res.data;
+          self.loading = false;
         });
+    },
+    businessModel() {
+      this.$router.push("bpm");
     },
     checkAvailable() {
       let self = this;
@@ -252,6 +325,7 @@ export default {
     },
     handleFile() {
       this.contractFile = this.$refs.contractFile.files[0];
+      this.contractFilename = this.contractFile.name;
     }
   }
 };
@@ -307,8 +381,14 @@ export default {
   box-shadow: 5px 40px 10px rgba(0, 0, 0, 0.57);
   transition: all 0.4s ease 0s;
 }
-
-.contract {
-  display: table;
+.rpc-availability {
+  margin-bottom: 20px;
+  margin-right: 10px;
+}
+.port-info {
+  display: inline-block;
+}
+.loader {
+  display: inline-block;
 }
 </style>

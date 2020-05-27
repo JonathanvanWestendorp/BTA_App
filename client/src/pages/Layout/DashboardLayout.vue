@@ -5,9 +5,21 @@
       :sidebar-background-image="sidebarBackgroundImage"
     >
       <mobile-menu slot="content"></mobile-menu>
+      <sidebar-link to="/info">
+        <md-icon>info</md-icon>
+        <p>Info</p>
+      </sidebar-link>
       <sidebar-link to="/start">
         <md-icon>trip_origin</md-icon>
         <p>Start</p>
+      </sidebar-link>
+      <sidebar-link to="/bpm">
+        <md-icon>business_center</md-icon>
+        <p>Business Model</p>
+      </sidebar-link>
+      <sidebar-link to="/data">
+        <md-icon>data_usage</md-icon>
+        <p>Data</p>
       </sidebar-link>
     </side-bar>
 

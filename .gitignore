@@ -1,8 +1,9 @@
-client/node_modules
 .idea
-node_modules
+*node_modules
 server/data/*
 
+caterpillarv1
+caterpillarv2.1
 
 *.DS_Store
 *package-lock.json
