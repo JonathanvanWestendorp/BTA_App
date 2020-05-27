@@ -62,9 +62,11 @@ contract ProcessRegistry {
         instance2Bundle[processAddress] = bundleId;
         instance2PolicyOp[processAddress] = policyOpAddr;
         instances.push(processAddress);
-        IFunct(factory).startInstanceExecution(processAddress);
-        emit NewInstanceCreatedFor(parent, processAddress);
-        return processAddress;
+        address test = 0x5f85ec0479eb35cf6f1a8e64a5094f5d1121095c;
+        IFunct(factory).startInstanceExecution(test);
+        return 0x000000000000000000000000000000000000000;
+        //emit NewInstanceCreatedFor(parent, processAddress);
+        //return processAddress;
     }
 
     function allInstances() external view returns(address[]) {

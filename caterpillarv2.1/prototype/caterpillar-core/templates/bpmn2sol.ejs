@@ -17,6 +17,7 @@ contract <%= nodeName(processId()) %>_Factory is AbstractFactory {
     }
 
     function startInstanceExecution(address processAddress) public {
+
         <%= nodeName(processId()) %>_Contract(processAddress).startExecution();
     }
 }

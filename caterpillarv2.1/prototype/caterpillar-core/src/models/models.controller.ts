@@ -51,7 +51,7 @@ wss.on('connection', function connection(ws) {
 });
 
 
-let executionAccount = 0
+let executionAccount = 0;
 
 web3.eth.filter("latest", function (error, result) {
     if (!error) {
@@ -146,7 +146,7 @@ models.get('/processes', (req, res) => {
 models.get('/models', (req, res) => {
     console.log('QUERYING REGISTERED MODELS');
     let actives = [];
-    if(processRegistryContract) {
+    if (processRegistryContract) {
     repoSchema.find({'bpmnModel': {$ne: 'empty'}},
         (err, repoData) => {
             if (err)
@@ -201,48 +201,34 @@ models.post('/registry', (req, res) => {
             return;
         }
 
-        console.log('PROCESS RUNTIME REGISTRY COMPILED SUCCESSFULLY');           
+        console.log('PROCESS RUNTIME REGISTRY COMPILED SUCCESSFULLY');
         console.log('CREATING RUNTIME REGISTRY INSTANCE ... ');
-
-        let ProcContract = web3.eth.contract(JSON.parse(output.contracts['ProcessRegistry:ProcessRegistry'].interface));
-            ProcContract.new(
-                {
-                    from: web3.eth.accounts[executionAccount],
-                    data: "0x" + output.contracts['ProcessRegistry:ProcessRegistry'].bytecode,
-                    gas: 4700000
-                },
-                (err, contract) => {
+        let contract = web3.eth.contract(JSON.parse(output.contracts['ProcessRegistry:ProcessRegistry'].interface));
+        contract.new({from: web3.eth.accounts[executionAccount], data: output.contracts['ProcessRegistry:ProcessRegistry'].bytecode}, (error, deployedContract) => {
+            const contractAddress = web3.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress;
+            if (contractAddress) {
+                const callableContract = contract.at(contractAddress);
+                registrySchema.create({
+                    address: contractAddress,
+                    solidityCode: input.ProcessRegistry,
+                    abi: output.contracts['ProcessRegistry:ProcessRegistry'].interface,
+                    bytecode: output.contracts['ProcessRegistry:ProcessRegistry'].bytecode,
+                }, (err, repoData) => {
                     if (err) {
-                        console.log(`ERROR: ProcessRegistry instance creation failed`);
-                        console.log('RESULT ', err);
-                        res.status(403).send(err);
-                    } else if (contract.address) {
-                        registrySchema.create(
-                            {
-                                address: contract.address,
-                                solidityCode: input['ProcessRegistry'],
-                                abi: output.contracts['ProcessRegistry:ProcessRegistry'].interface,
-                                bytecode: output.contracts['ProcessRegistry:ProcessRegistry'].bytecode,
-                            },
-                            (err, repoData) => {
-                                if (err) {
-                                    console.log('Error ', err);
-                                    console.log('----------------------------------------------------------------------------------------------');
-                                    // registerModels(currentIndex, sortedElements, createdElementMap, modelInfo, contracts, res);
-                                }
-                                else {
-                                    processRegistryContract = contract;
-                                    let registryGas = web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed;
-                                    let idAsString = repoData._id.toString();
-                                    console.log("Process Registry DEPLOYED and RUNNING at " + processRegistryContract.address.toString());
-                                    console.log('GAS USED: ', registryGas);
-                                    console.log('REPO ID: ', idAsString);
-                                    res.status(200).send({ 'address': processRegistryContract.address.toString(), gas: registryGas, repoId: idAsString});
-                                    console.log('----------------------------------------------------------------------------------------------');
-                                }
-                            })
+                        console.log('Error ', err);
+                        console.log('----------------------------------------------------------------------------------------------');
+                        // registerModels(currentIndex, sortedElements, createdElementMap, modelInfo, contracts, res);
+                    } else {
+                        processRegistryContract = callableContract;
+                        let idAsString = repoData._id.toString();
+                        console.log("Process Registry DEPLOYED and RUNNING at " + contractAddress);
+                        console.log('REPO ID: ', idAsString);
+                        res.status(200).send({'address': contractAddress, repoId: idAsString});
+                        console.log('----------------------------------------------------------------------------------------------');
                     }
                 });
+            }
+        });
     } catch (e) {
         console.log("Error: ", e);
         console.log('----------------------------------------------------------------------------------------------');
@@ -327,56 +313,55 @@ models.post('/resources/policy', (req, res) => {
             }
 
             console.log('POLICY CONTRACTS GENERATED AND COMPILED SUCCESSFULLY');
-            
-            let ProcContract = web3.eth.contract(JSON.parse(output.contracts['BindingPolicy:BindingPolicy_Contract'].interface));
-            ProcContract.new(
-                {
-                    from: web3.eth.accounts[executionAccount],
-                    data: "0x" + output.contracts['BindingPolicy:BindingPolicy_Contract'].bytecode,
-                    gas: 4700000
-                },
-                (err, contract) => {
-                    if (err) {
-                        console.log(`ERROR: PolicyContract instance creation failed`);
-                        console.log('RESULT ', err);
-                        res.status(403).send(err);
-                    } else if (contract.address) {
 
-                        let indexToRole = [];
-                        for (let [role, index] of policy.roleIndexMap) {
-                            indexToRole[index] = role;
-                        }
-                        policySchema.create(
-                            {
-                                address: contract.address,
-                                model: req.body.model,
-                                solidityCode: input['BindingPolicy'],
-                                abi: output.contracts['BindingPolicy:BindingPolicy_Contract'].interface,
-                                bytecode: output.contracts['BindingPolicy:BindingPolicy_Contract'].bytecode,
-                                indexToRole: indexToRole,
-                                accessControlAbi: output.contracts['BindingAccessControl:BindingAccessControl'].interface,
-                                accessControlBytecode: output.contracts['BindingAccessControl:BindingAccessControl'].bytecode,
-                            },
-                            (err, repoData) => {
-                                if (err) {
-                                    console.log('Error ', err);
-                                    console.log('----------------------------------------------------------------------------------------------');
-                                    // registerModels(currentIndex, sortedElements, createdElementMap, modelInfo, contracts, res);
-                                }
-                                else {
-                                    let idAsString = repoData._id.toString();
-                                    let policyGas = web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed;
-                                    console.log("Policy CREATED and RUNNING at " + contract.address.toString());
-                                    console.log('GAS USED: ', policyGas);
-                                    console.log('Policy Id: ',  idAsString);
-                                    console.log('Role\'s indexes: ', policy.roleIndexMap);
-                                    console.log(".............................................");
-                                    res.status(200).send({address: contract.address.toString(), gas: policyGas, repoId: idAsString });
-                                    console.log('----------------------------------------------------------------------------------------------');
-                                }
-                        })
+            let ProcContract = web3.eth.contract(JSON.parse(output.contracts['BindingPolicy:BindingPolicy_Contract'].interface));
+            ProcContract.new({
+                from: web3.eth.accounts[executionAccount],
+                data: "0x" + output.contracts['BindingPolicy:BindingPolicy_Contract'].bytecode,
+                gas: 4700000
+            }, (err, contract) => {
+                const contractAddress = web3.eth.getTransactionReceipt(contract.transactionHash).contractAddress;
+                if (err) {
+                    console.log(`ERROR: PolicyContract instance creation failed`);
+                    console.log('RESULT ', err);
+                    res.status(403).send(err);
+                }
+                else if (contractAddress) {
+                    ProcContract.at(contractAddress);
+                    contract.address = contractAddress;
+                    let indexToRole = [];
+                    for (let [role, index] of policy.roleIndexMap) {
+                        indexToRole[index] = role;
                     }
-                });
+                    policySchema.create({
+                        address: contract.address,
+                        model: req.body.model,
+                        solidityCode: input['BindingPolicy'],
+                        abi: output.contracts['BindingPolicy:BindingPolicy_Contract'].interface,
+                        bytecode: output.contracts['BindingPolicy:BindingPolicy_Contract'].bytecode,
+                        indexToRole: indexToRole,
+                        accessControlAbi: output.contracts['BindingAccessControl:BindingAccessControl'].interface,
+                        accessControlBytecode: output.contracts['BindingAccessControl:BindingAccessControl'].bytecode,
+                    }, (err, repoData) => {
+                        if (err) {
+                            console.log('Error ', err);
+                            console.log('----------------------------------------------------------------------------------------------');
+                            // registerModels(currentIndex, sortedElements, createdElementMap, modelInfo, contracts, res);
+                        }
+                        else {
+                            let idAsString = repoData._id.toString();
+                            let policyGas = web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed;
+                            console.log("Policy CREATED and RUNNING at " + contract.address.toString());
+                            console.log('GAS USED: ', policyGas);
+                            console.log('Policy Id: ', idAsString);
+                            console.log('Role\'s indexes: ', policy.roleIndexMap);
+                            console.log(".............................................");
+                            res.status(200).send({ address: contract.address.toString(), gas: policyGas, repoId: idAsString });
+                            console.log('----------------------------------------------------------------------------------------------');
+                        }
+                    });
+                }
+            });
         })
         .catch((err) => {
             res.status(200).send({ 'Error': 'Error Parsing' });
@@ -768,11 +753,15 @@ let searchRepository = (top: number, queue: Array<string>, processData: Map<stri
                                 gas: 4700000
                             },
                             (err, contract) => {
+                                const contractAddress = web3.eth.getTransactionReceipt(contract.transactionHash).contractAddress;
                                 if (err) {
                                     console.log(`ERROR: TASK-ROLE-MAP instance creation failed`);
                                     console.log('RESULT ', err);
                                     response.status(403).send(err);
-                                } else if (contract.address) {
+                                }
+                                else if (contractAddress) {
+                                    ProcContract.at(contractAddress);
+                                    contract.address = contractAddress;
                                     roleTaskSchema.create(
                                         {
                                             address: contract.address,
@@ -826,7 +815,7 @@ let searchRepository = (top: number, queue: Array<string>, processData: Map<stri
 //////////////////////////////////////////////////////////////////////
 
 models.post('/models', (req, res) => {
-    if (processRegistryContract !== undefined) {
+    if (!processRegistryContract) {
         console.log('ERROR: Runtime Registry NOT FOUND');
         res.status(404).send({'Error': 'Runtime Registry NOT FOUND'});
         console.log('----------------------------------------------------------------------------------------------');
@@ -864,7 +853,7 @@ models.post('/models', (req, res) => {
                 console.log('CONTRACTS GENERATED AND COMPILED SUCCESSFULLY');
                 Object.keys(output.contracts).forEach(key => {
                     let bytecode = '0x' + output.contracts[key].bytecode;
-                    var gasEstimate = web3.eth.estimateGas({data: bytecode});
+                    let gasEstimate = web3.eth.estimateGas({data: bytecode});
                     // console.log(".............................................");
                     // console.log("Contract Name: " + key.split(':')[1]);
                     // console.log("Gas Estimation: " + gasEstimate);
@@ -909,26 +898,28 @@ models.post('/models/:bundleId', (req, res) => {
                                             else {
                                                 console.log("TRYING TO CREATE INSTANCE OF CONTRACT: ", repoData[0].rootProcessID);
                                                 let AccessControlContract = web3.eth.contract(JSON.parse(repoDataPolicy[0].accessControlAbi));
-                                                AccessControlContract.new(processRegistryContract.address, repoDataPolicy[0].address, repoDataTaskRole[0].address,
-                                                    {
+                                                    AccessControlContract.new(processRegistryContract.address, repoDataPolicy[0].address, repoDataTaskRole[0].address, {
                                                         from: req.body.caseCreator,
                                                         data: "0x" + repoDataPolicy[0].accessControlBytecode,
                                                         gas: 4700000
-                                                    },
-                                                    (err, contract) => {
+                                                    }, (err, contract) => {
+                                                        const contractAddress = web3.eth.getTransactionReceipt(contract.transactionHash).contractAddress;
                                                         if (err) {
                                                             console.log(`ERROR: BindingAccessControl instance creation failed`);
-                                                            console.log('RESULT ', err);
+                                                            console.log('RESULT: ', err);
                                                             res.status(403).send(err);
-                                                        } else if (contract.address) {                                                   
+                                                        }
+                                                        else if (contractAddress) {
+                                                            AccessControlContract.at(contractAddress);
+                                                            contract.address = contractAddress;
                                                             let policyGas = web3.eth.getTransactionReceipt(contract.transactionHash).gasUsed;
                                                             console.log("BindingAccessControl Contract DEPLOYED and RUNNING at " + contract.address.toString());
                                                             console.log('Gas Used: ', policyGas);
                                                             console.log('....................................................................');
-                                                            
-                                                            processRegistryContract.newBundleInstanceFor(repoData[0]._id.toString(), 0, contract.address, {
-                                                                    from: web3.eth.accounts[executionAccount],
-                                                                    gas: 4500000
+                                                            console.log(typeof contractAddress);
+                                                            console.log(contractAddress);
+                                                            processRegistryContract.newBundleInstanceFor(repoData[0]._id.toString(), "0x0000000000000000000000000000000000000000", contract.address, {
+                                                                    from: web3.eth.accounts[executionAccount]
                                                                 },
                                                                 (errNew, resNew) => {
                                                                     if (!errNew) {
@@ -944,7 +935,6 @@ models.post('/models/:bundleId', (req, res) => {
                                                                                     console.log('Root Process Contract DEPLOYED and RUNNING !!! AT ADDRESS: ', processAddress);
                                                                                     console.log('GAS USED: ', web3.eth.getTransactionReceipt(resEvt.transactionHash).gasUsed);
                                                                                     console.log('....................................................................');
-                                                                                    
                                                                                     contract.nominateCaseCreator(roleIndexMap.get(req.body.creatorRole), req.body.caseCreator, processAddress, {
                                                                                         from: req.body.caseCreator,
                                                                                         gas: 4700000
@@ -1226,18 +1216,19 @@ let createParent2ChildRelation = (currentIndex, sortedElements, outputContracts,
 let registerFactory = (currentIndex, sortedElements, outputContracts, modelInfo, response) => {
     let entryFactoryName = `${modelInfo.id}:${sortedElements[currentIndex].nodeName}_Factory`;
     let FactoryContract = web3.eth.contract(JSON.parse(outputContracts[entryFactoryName].interface));
-    FactoryContract.new(
-        {from: web3.eth.accounts[0], data: "0x" + outputContracts[entryFactoryName].bytecode, gas: 4700000},
-        (errF, contractF) => {
-            if (errF) {
-                console.log(`ERROR: ${sortedElements[currentIndex].nodeName}_Factory instance creation failed`);
-                console.log('RESULT ', errF);
-                response.status(400).send(errF);
-            } else if (contractF.address) {
-                console.log(`${sortedElements[currentIndex].nodeName}_Factory running at address ${contractF.address.toString()}`);
-                continueFactoryRegistration(currentIndex, sortedElements, outputContracts, contractF, modelInfo, response);
-            }
-        });
+    FactoryContract.new({from: web3.eth.accounts[executionAccount], data: outputContracts[entryFactoryName].bytecode}, (error, deployedContract) => {
+        const contractAddress = web3.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress;
+        if (contractAddress) {
+            const contractF = FactoryContract.at(contractAddress);
+            contractF.address = contractAddress;
+            console.log(`${sortedElements[currentIndex].nodeName}_Factory running at address ${contractF.address.toString()}`);
+            continueFactoryRegistration(currentIndex, sortedElements, outputContracts, contractF, modelInfo, response);
+        } else {
+            console.log(`ERROR: ${sortedElements[currentIndex].nodeName}_Factory instance creation failed`);
+            console.log('RESULT ');
+            response.status(400).send();
+        }
+    });
 };
 
 let continueFactoryRegistration = (currentIndex, sortedElements, outputContracts, contractF, modelInfo, response) => {
@@ -1268,41 +1259,38 @@ let createWorklistInstances = (currentIndex, sortedElements, outputContracts, mo
     let entryWorklistName = `${modelInfo.id}:${sortedElements[currentIndex].nodeName}_Worklist`;
     if (outputContracts[entryWorklistName]) {
         let WorklistContract = web3.eth.contract(JSON.parse(outputContracts[entryWorklistName].interface));
-        WorklistContract.new(
-            {from: web3.eth.accounts[0], data: "0x" + outputContracts[entryWorklistName].bytecode, gas: 4700000},
-            (errW, contractW) => {
-                if (errW) {
-                    console.log(`${sortedElements[currentIndex].nodeName}_Worklist instance creation failed`);
-                    console.log('ERROR: ', errW);
-                    response.status(400).send(errW);
-                }
-                else if (contractW.address) {
-                    console.log(`${sortedElements[currentIndex].nodeName}_Worklist running at address ${contractW.address.toString()}`);
-                    processRegistryContract.registerWorklist(sortedElements[currentIndex].bundleId, contractW.address, {
-                            from: web3.eth.accounts[0],
-                            gas: 4700000
-                        },
-                        (error1, result1) => {
-                            if (result1) {
-                                console.log(`${sortedElements[currentIndex].nodeName}_Worklist registered SUCCESSFULLY in Process Registry`);
-                                console.log('....................................................................');
-                                sortedElements[currentIndex] = {
-                                    nodeId: sortedElements[currentIndex].nodeId,
-                                    nodeName: sortedElements[currentIndex].nodeName,
-                                    bundleId: sortedElements[currentIndex].bundleId,
-                                    bundleParent: sortedElements[currentIndex].bundleParent,
-                                    worklist: contractW.address
-                                };
-                                continueWorklistCreation(currentIndex, sortedElements, outputContracts, modelInfo, response);
-                            }
-                            else {
-                                console.log('ERROR ', error1);
-                                response.status(400).send(error1);
-                            }
-                        })
-                }
+        WorklistContract.new({from: web3.eth.accounts[executionAccount], data: outputContracts[entryWorklistName].bytecode}, (error, deployedContract) => {
+            const contractAddress = web3.eth.getTransactionReceipt(deployedContract.transactionHash).contractAddress;
+            if (contractAddress) {
+                let contractW = WorklistContract.at(contractAddress);
+                console.log(`${sortedElements[currentIndex].nodeName}_Worklist running at address ${contractAddress}`);
+                processRegistryContract.registerWorklist(sortedElements[currentIndex].bundleId, contractAddress, {
+                    from: web3.eth.accounts[0],
+                    gas: 4700000
+                }, (error1, result1) => {
+                    if (result1) {
+                        console.log(`${sortedElements[currentIndex].nodeName}_Worklist registered SUCCESSFULLY in Process Registry`);
+                        console.log('....................................................................');
+                        sortedElements[currentIndex] = {
+                            nodeId: sortedElements[currentIndex].nodeId,
+                            nodeName: sortedElements[currentIndex].nodeName,
+                            bundleId: sortedElements[currentIndex].bundleId,
+                            bundleParent: sortedElements[currentIndex].bundleParent,
+                            worklist: contractAddress
+                        };
+                        continueWorklistCreation(currentIndex, sortedElements, outputContracts, modelInfo, response);
+                    }
+                    else {
+                        console.log('ERROR ', error1);
+                        response.status(400).send(error1);
+                    }
+                });
+            } else {
+                console.log(`${sortedElements[currentIndex].nodeName}_Worklist instance creation failed`);
+                console.log('ERROR');
+                response.status(400).send();
             }
-        )
+        });
     } else {
         continueWorklistCreation(currentIndex, sortedElements, outputContracts, modelInfo, response);
     }
