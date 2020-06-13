@@ -2,8 +2,9 @@ import DashboardLayout from "../pages/Layout/DashboardLayout.vue";
 
 import Info from "../pages/Info.vue";
 import Start from "../pages/Start.vue";
-import BusinessModel from "../pages/BusinessModel.vue";
 import Data from "../pages/Data.vue";
+import BusinessModel from "../pages/BusinessModel.vue";
+import Analytics from "../pages/Analytics.vue";
 
 const routes = [
   {
@@ -22,14 +23,19 @@ const routes = [
         component: Start
       },
       {
+        path: "data",
+        name: "Data",
+        component: Data
+      },
+      {
         path: "bpm",
         name: "BusinessModel",
         component: BusinessModel
       },
       {
-        path: "data",
-        name: "Data",
-        component: Data
+        path: "analytics",
+        name: "Analytics",
+        component: Analytics
       }
     ]
   }

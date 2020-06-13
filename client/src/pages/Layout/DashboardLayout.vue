@@ -13,13 +13,17 @@
         <md-icon>trip_origin</md-icon>
         <p>Start</p>
       </sidebar-link>
-      <sidebar-link to="/bpm">
-        <md-icon>business_center</md-icon>
-        <p>Business Model</p>
-      </sidebar-link>
       <sidebar-link to="/data">
         <md-icon>data_usage</md-icon>
-        <p>Data</p>
+        <p>Transactions</p>
+      </sidebar-link>
+      <sidebar-link to="/bpm">
+        <md-icon>business_center</md-icon>
+        <p>Caterpillar</p>
+      </sidebar-link>
+      <sidebar-link to="/analytics">
+        <md-icon>analytics</md-icon>
+        <p>Analytics</p>
       </sidebar-link>
     </side-bar>
 

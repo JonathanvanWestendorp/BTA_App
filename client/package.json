@@ -1,13 +1,4 @@
 {
-  "name": "transaction-analysis-tool",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "serve": "vue-cli-service serve --open",
-    "dev": "npm run serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
-  },
   "dependencies": {
     "axios": "^0.19.2",
     "chartist": "0.11.4",
@@ -21,7 +12,9 @@
     "vue-material": "1.0.0-beta-11",
     "vue-router": "3.1.6",
     "vue-session": "^1.0.0",
-    "vue-social-sharing": "2.4.7"
+    "vue-social-sharing": "2.4.7",
+    "vue2-circle-progress": "latest",
+    "bpmn-js": "^0.20.5"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "4.2.3",
@@ -38,5 +31,14 @@
     "sass": "1.26.2",
     "sass-loader": "8.0.2",
     "vue-template-compiler": "2.6.11"
-  }
+  },
+  "name": "transaction-analysis-tool",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve --open",
+    "dev": "npm run serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "version": "1.0.0"
 }

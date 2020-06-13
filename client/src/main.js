@@ -10,7 +10,6 @@ import App from "./App";
 import routes from "./routes/routes";
 
 // Plugins
-import GlobalComponents from "./globalComponents";
 import GlobalDirectives from "./globalDirectives";
 
 // MaterialDashboard plugin
@@ -26,7 +25,6 @@ Vue.use(VueRouter);
 Vue.use(VueSession, { persist: true });
 Vue.use(MaterialDashboard);
 Vue.use(VueFriendlyIframe);
-Vue.use(GlobalComponents);
 Vue.use(GlobalDirectives);
 
 /* eslint-disable no-new */
