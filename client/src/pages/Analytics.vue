@@ -34,25 +34,37 @@
           >
             <p>{{ input.input }}</p>
             <input
+              :id="`field-${taskId}${idx_1}`"
               :type="input.inputType"
               v-model="userTasks[taskId][idx_1].value"
+              :disabled="userTasks[taskId][idx_1].sampleTest"
             />
             <input
-              :id="`sample-test${taskId}${idx_1}`"
+              :id="`sample-test-${taskId}${idx_1}`"
               type="checkbox"
               v-model="userTasks[taskId][idx_1].sampleTest"
-              @click="openModal(taskId, idx_1)"
+              @click="
+                openModal(
+                  userTasks[taskId][idx_1].sampleTest,
+                  taskId,
+                  userTasks[taskId][idx_1].inputType,
+                  idx_1
+                )
+              "
             />
-            <label :for="`sample-test${taskId}${idx_1}`">Vary</label>
+            <label :for="`sample-test-${taskId}${idx_1}`">Vary</label>
           </div>
         </form>
       </div>
       <div v-if="modalOpen" class="modal-container">
-        <modal :work-item="modalItem" :idx="modalIdx" />
+        <modal
+          :work-item="modalItem"
+          :work-item-type="modalType"
+          :idx="modalIdx"
+        />
       </div>
     </div>
     <div v-if="Object.keys(userTasks).length > 0">
-      <p v-if="incompleteInput">Please fill in all values</p>
       <div class="simulation-form-container">
         <form class="simulation-form">
           <input
@@ -68,11 +80,11 @@
           </select>
         </form>
       </div>
-      <div class="progress-circle">
+      <div v-if="frequency > 0" class="progress-circle">
         <VueCircle
           ref="circleId"
           :progress="0"
-          :size="frequency"
+          :size="200"
           :reverse="false"
           line-cap="round"
           :fill="{ color: '#4caf50' }"
@@ -80,9 +92,8 @@
           :animation-start-value="0.0"
           :start-angle="0"
           insert-mode="append"
-          :thickness="5"
+          :thickness="10"
           :show-percent="true"
-          @vue-circle-end="progress_end"
         >
         </VueCircle>
       </div>
@@ -96,7 +107,7 @@ import Bpmnjs from "bpmn-js";
 import xmlHelper from "./js/xmlHelper";
 import Simulator from "./js/Simulator";
 import Modal from "../components/Modal";
-import VueCircle from "vue2-circle-progress";
+import VueCircle from "vue2-circle-progress/src/index.vue";
 
 export default {
   data() {
@@ -108,11 +119,11 @@ export default {
       userTasks: {},
       placeholder: "Select Business Process Model",
       showMenu: false,
-      incompleteInput: false,
       modalOpen: false,
       modalItem: null,
+      modalType: null,
       modalIdx: null,
-      frequency: 10
+      frequency: 0
     };
   },
   mounted() {
@@ -167,7 +178,8 @@ export default {
                 inputType: "number",
                 input: inputs[i],
                 value: "",
-                sampleTest: false
+                sampleTest: false,
+                sampleMethod: {}
               });
               break;
             case "bool":
@@ -175,7 +187,8 @@ export default {
                 inputType: "checkbox",
                 input: inputs[i],
                 value: "",
-                sampleTest: false
+                sampleTest: false,
+                sampleMethod: {}
               });
               break;
             case "string":
@@ -183,7 +196,8 @@ export default {
                 inputType: "text",
                 input: inputs[i],
                 value: "",
-                sampleTest: false
+                sampleTest: false,
+                sampleMethod: {}
               });
               break;
             case "address":
@@ -191,41 +205,58 @@ export default {
                 inputType: "text",
                 input: inputs[i],
                 value: "",
-                sampleTest: false
+                sampleTest: false,
+                sampleMethod: {}
               });
               break;
           }
         }
       }
     },
-    simulate() {
-      for (const task in this.userTasks) {
-        for (const input of this.userTasks[task]) {
-          this.incompleteInput = !input.value && !input.sampleTest;
-        }
-      }
-      if (!this.incompleteInput) {
+    async simulate() {
+      if (this.inputComplete()) {
         for (let i = 0; i < this.frequency; i++) {
           this.simulator = new Simulator(
             this.userTasks,
             this.placeholder,
-            1,
             this.canvas
           );
-          this.simulator.simulate();
-          this.$refs.circleID.updateProgress(i);
+          await this.simulator.simulate();
+          console.log(`instance ${i + 1} simulated`);
+          this.$refs.circleId.updateProgress(
+            Math.floor(((i + 1) / this.frequency) * 100)
+          );
         }
+        this.simulationEnd();
       }
     },
-    openModal(item, idx) {
+    inputComplete() {
+      for (const task in this.userTasks) {
+        for (const input of this.userTasks[task]) {
+          if (!(input.value !== "" || input.sampleTest)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+    openModal(checked, item, type, idx) {
+      if (checked) {
+        this.userTasks[item][idx].sampleTest = false;
+        this.userTasks[item][idx].sampleMethod = {};
+        document.getElementById(`field-${item}${idx}`).disabled = false;
+        document.getElementById(`field-${item}${idx}`).placeholder = "";
+        return;
+      }
       this.modalItem = item;
+      this.modalType = type;
       this.modalIdx = idx;
       this.toggleModal();
     },
     toggleModal() {
       this.modalOpen = !this.modalOpen;
     },
-    progress_end() {
+    simulationEnd() {
       console.log("Done! Please see the results on the 'results' tab.");
     }
   }
@@ -319,5 +350,12 @@ export default {
 }
 .bpmn {
   height: 450px;
+}
+.progress-circle {
+  display: inline-block;
+}
+.modal-container {
+  width: 0;
+  height: 0;
 }
 </style>

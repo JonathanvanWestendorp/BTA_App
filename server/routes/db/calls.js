@@ -16,7 +16,7 @@ router.post('/', function (req, res) {
       res.send(error);
     } else {
       console.log('Call saved successfully.');
-      res.status(200)
+      res.status(200);
       res.send();
     }
   });

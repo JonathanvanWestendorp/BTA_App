@@ -14,14 +14,16 @@ app.use(express.urlencoded({
     extended: false
 }));
 
-const db = require('./routes/db/calls');
+const calls = require('./routes/db/calls');
 const deploy = require('./routes/deploy/deploy');
 const execute = require('./routes/execute/execute');
 const compile = require('./routes/compile/compile');
+const simulation = require('./routes/db/simulation');
 
-app.use('/calls', db);
+app.use('/calls', calls);
 app.use('/deploy', deploy);
 app.use('/execute', execute);
 app.use('/compile', compile);
+app.use('/simulation', simulation);
 
 app.listen(port, () => console.log(`Server started on port ${port}`));

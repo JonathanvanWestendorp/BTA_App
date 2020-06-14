@@ -1,22 +1,19 @@
+import * as random from "./randomNormal";
 import axios from "axios";
 
 class Simulator {
-  constructor(userTasks, modelName, iterations, canvas) {
+  constructor(userTasks, modelName, canvas) {
     this.canvas = canvas;
     this.userTasks = userTasks;
     this.modelName = modelName;
-    this.iterations = iterations;
     this.previousState = null;
     this.instanceAddress = "";
     this.data = {};
   }
 
   async simulate() {
-    for (let i = 0; i < this.iterations; i++) {
-      await this.createInstance();
-      console.log(`instance ${i} created`);
-      await this.simulateInstance();
-    }
+    await this.createInstance();
+    await this.simulateInstance();
     return this.data;
   }
 
@@ -38,8 +35,13 @@ class Simulator {
             const taskId = state.workItems[0].elementId;
             const userTask = this.userTasks[taskId];
             for (const input of userTask) {
-              parameters.push(input.value.toString());
+              parameters.push(
+                input.sampleTest
+                  ? this.randomValue(input.sampleMethod)
+                  : input.value.toString()
+              );
             }
+            console.log(parameters);
             this.data[taskId] = await this.executeWorkitem(
               taskId,
               parameters,
@@ -47,7 +49,6 @@ class Simulator {
             );
           }
         } else {
-          console.log("simulation finished");
           break;
         }
       }
@@ -68,6 +69,22 @@ class Simulator {
       elementId: taskId,
       inputParameters: parameters
     });
+  }
+
+  randomValue(method) {
+    if (method.name === "Random") {
+      return Math.floor(Math.random() * (method.min - method.max) + method.min);
+    } else if (method.name === "Gaussian") {
+      return Math.floor(
+        random.randomSkewNormal(
+          parseInt(method.loc),
+          parseInt(method.scale),
+          parseInt(method.shape)
+        )
+      ).toString();
+    } else if (method.name === "Binomial") {
+      return Math.random() <= method.p;
+    }
   }
 
   renderState(state) {
