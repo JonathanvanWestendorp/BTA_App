@@ -7,7 +7,11 @@ router.post('/', function (req, res) {
   const data = req.body;
 
   mongoose.connect('mongodb://localhost/simulation_results', { useUnifiedTopology: true, useNewUrlParser: true });
+
   let simulationResult = require('./simulationResultSchema');
+  let singleSimulation = require('./singleSimulationSchema');
+  let userTask = require('./userTaskSchema');
+
   let newSimulationResult = new simulationResult(data);
 
   newSimulationResult.save(function(error) {

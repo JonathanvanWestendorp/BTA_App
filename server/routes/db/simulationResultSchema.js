@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+let singleSimulation = require('./singleSimulationSchema');
+
 let simulationResultSchema = new Schema({
+  simulations: [singleSimulation],
   timestamp: Date,
   iterations: Number,
   duration: Number,

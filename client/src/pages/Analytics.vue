@@ -74,6 +74,7 @@
             value="Start Simulation"
           />
           <select v-model="frequency">
+            <option>1</option>
             <option>10</option>
             <option>100</option>
             <option>500</option>
@@ -215,19 +216,31 @@ export default {
     },
     async simulate() {
       if (this.inputComplete()) {
+        let simulationResult = {};
+        let singleSims = [];
+        const t0 = performance.now();
         for (let i = 0; i < this.frequency; i++) {
+          const singleSim = { userTasks: [] };
           this.simulator = new Simulator(
             this.userTasks,
             this.placeholder,
             this.canvas
           );
-          await this.simulator.simulate();
+          singleSim.userTasks = await this.simulator.simulate();
+          singleSims.push(singleSim);
           console.log(`instance ${i + 1} simulated`);
           this.$refs.circleId.updateProgress(
             Math.floor(((i + 1) / this.frequency) * 100)
           );
         }
+        const t1 = performance.now();
         this.simulationEnd();
+        simulationResult = {
+          simulations: singleSims,
+          timestamp: Date.now,
+          iterations: this.frequency,
+          duration: t1 - t0
+        };
       }
     },
     inputComplete() {

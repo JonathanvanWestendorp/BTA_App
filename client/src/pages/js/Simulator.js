@@ -8,7 +8,7 @@ class Simulator {
     this.modelName = modelName;
     this.previousState = null;
     this.instanceAddress = "";
-    this.data = {};
+    this.data = [];
   }
 
   async simulate() {
@@ -41,12 +41,19 @@ class Simulator {
                   : input.value.toString()
               );
             }
-            console.log(parameters);
-            this.data[taskId] = await this.executeWorkitem(
+            const t0 = performance.now();
+            const receipt = await this.executeWorkitem(
               taskId,
               parameters,
               state.workItems[0].hrefs[0]
             );
+            const t1 = performance.now();
+            this.data.push({
+              taskId: taskId,
+              input: parameters,
+              duration: t1 - t0,
+              receipt: receipt.data
+            });
           }
         } else {
           break;
@@ -88,7 +95,6 @@ class Simulator {
   }
 
   renderState(state) {
-    console.log(state);
     if (this.previousState) {
       this.previousState.workItems.forEach(workItem => {
         this.canvas.removeMarker(workItem.elementId, "highlight");
