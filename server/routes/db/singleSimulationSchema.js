@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-let userTask = require('./userTaskSchema');
+let userTask = require('./userTaskSchema').schema;
 
 let singleSimulationSchema = new Schema({
   userTasks: [userTask],

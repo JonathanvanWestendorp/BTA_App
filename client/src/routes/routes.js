@@ -5,12 +5,14 @@ import Start from "../pages/Start.vue";
 import Data from "../pages/Data.vue";
 import BusinessModel from "../pages/BusinessModel.vue";
 import Analytics from "../pages/Analytics.vue";
+import Results from "../pages/Results";
+import AnalyticsPanel from "../pages/AnalyticsPanel";
 
 const routes = [
   {
     path: "/",
     component: DashboardLayout,
-    redirect: "/start",
+    redirect: "/info",
     children: [
       {
         path: "info",
@@ -36,6 +38,16 @@ const routes = [
         path: "analytics",
         name: "Analytics",
         component: Analytics
+      },
+      {
+        path: "results",
+        name: "Results",
+        component: Results
+      },
+      {
+        path: "analyticspanel",
+        name: "AnalyticsPanel",
+        component: AnalyticsPanel
       }
     ]
   }

@@ -216,7 +216,6 @@ export default {
     },
     async simulate() {
       if (this.inputComplete()) {
-        let simulationResult = {};
         let singleSims = [];
         const t0 = performance.now();
         for (let i = 0; i < this.frequency; i++) {
@@ -234,13 +233,19 @@ export default {
           );
         }
         const t1 = performance.now();
-        this.simulationEnd();
-        simulationResult = {
+        let simulationResult = {
           simulations: singleSims,
-          timestamp: Date.now,
+          timestamp: Date.now(),
           iterations: this.frequency,
-          duration: t1 - t0
+          duration: t1 - t0,
+          name: this.placeholder
         };
+        console.log(simulationResult);
+        const endpoint = `http://${this.network}:4500/simulation`;
+        let _this = this;
+        axios.post(endpoint, simulationResult).then(function(res) {
+          _this.simulationEnd(res);
+        });
       }
     },
     inputComplete() {
@@ -269,7 +274,8 @@ export default {
     toggleModal() {
       this.modalOpen = !this.modalOpen;
     },
-    simulationEnd() {
+    simulationEnd(res) {
+      console.log(res.statusText);
       console.log("Done! Please see the results on the 'results' tab.");
     }
   }

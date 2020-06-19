@@ -23,7 +23,11 @@
       </sidebar-link>
       <sidebar-link to="/analytics">
         <md-icon>analytics</md-icon>
-        <p>Analytics</p>
+        <p>Simulate</p>
+      </sidebar-link>
+      <sidebar-link to="/results">
+        <md-icon>science</md-icon>
+        <p>Results</p>
       </sidebar-link>
     </side-bar>
 

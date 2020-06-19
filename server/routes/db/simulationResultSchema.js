@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-let singleSimulation = require('./singleSimulationSchema');
+const singleSimulation = require('./singleSimulationSchema').schema;
 
 let simulationResultSchema = new Schema({
   simulations: [singleSimulation],
@@ -9,7 +9,8 @@ let simulationResultSchema = new Schema({
   iterations: Number,
   duration: Number,
   created_at: Date,
-  updated_at: Date
+  updated_at: Date,
+  name: String
 });
 
 simulationResultSchema.pre('save', function(next) {

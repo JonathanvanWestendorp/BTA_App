@@ -43,7 +43,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: "BTA Tool"
+      default: "DECADENT"
     },
     sidebarBackgroundImage: {
       type: String,
