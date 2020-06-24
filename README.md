@@ -5,7 +5,7 @@
 
 * [Installation](#installation)
 
-* [Instructions](#instructions)
+* [Usage](#usage)
 
 ### Requirements
   * DECADENT was developed in a Linux Virtual Machine on Google Cloud. Consequently, a linux environment is needed for installation.
@@ -19,7 +19,7 @@
 ### Installation
 Installing DECADENT is fairly straightforward. Both `server` and `client` folders are apps on its own. To install the needed packages, move to the root of this project and run `npm i`. Next, move into the `client` folder and run `npm i` again. This will install all needed packages.
 
-### Instructions
+### Usage
 To start the application, make sure both server and client side dependencies are installed. Then move to the root of this repo and run `./start.sh` (make sure the shell script is executable by running `chmod u+x ./start.sh`). This command starts DECADENT in development mode. See both package.json files for the commands to run in production mode. Next, start caterpillar by running `docker run --rm -it -p 3200:3200 -p 3000:3000 -p 8090:8090 --name caterpillar jonathanvanwestendorp/caterpillar_bta:latest`. This should get you all ready and set for exploring DECADENT!
 
 Navigate to localhost:8080 from a local browser. You will find the DECADENT info page. Here, basic usage information can be found. On the other tabs, all different functionality of DECADENT can be explored. First, navigate to *start*. This is where you will choose between the simple smart contract exploration and the more extensive simulation. 
