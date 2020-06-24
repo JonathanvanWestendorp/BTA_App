@@ -7,10 +7,6 @@
 
 * [Instructions](#instructions)
 
-* [Resources](#resources)
-
-* [Final Notes](#final-notes)
-
 ### Requirements
   * DECADENT was developed in a Linux Virtual Machine on Google Cloud. Consequently, a linux environment is needed for installation.
   * All frontend paths are relative to localhost. Accessing the running tool from a remote browser would result in broken paths. Therefore, it is recommendened that a webbrowser and some GUI to access the virtual machine are installed.
